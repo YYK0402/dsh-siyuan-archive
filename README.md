@@ -20,6 +20,9 @@ DeepSeek Harness（DSH）插件：把 DSH 对话产出的内容**归档到思源
 ## 安装
 
 ```bash
+# 从 GitHub 安装（推荐；纯 JS 无构建步骤，无需额外授权）
+dsh plugin --profile web add github:YYK0402/dsh-siyuan-archive#main
+
 # 本地开发版（link）
 dsh plugin --profile web add /path/to/dsh-siyuan
 
