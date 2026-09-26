@@ -1,6 +1,6 @@
 {
   "name": "dsh-siyuan-archive",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "DeepSeek Harness 插件：把 DSH 对话产出归档到思源笔记，带连接/归档/权限设置页，token 存宿主凭据库，权限按笔记本→文档继承、默认全拒。",
   "type": "module",
   "main": "lib/index.js",
@@ -48,7 +48,7 @@
     }
   },
   "scripts": {
-    "test": "node test/harness.mjs && node test/tools-e2e.mjs"
+    "test": "node test/harness.mjs && node test/client.mjs && node test/tools-e2e.mjs"
   },
   "keywords": [
     "dsh",

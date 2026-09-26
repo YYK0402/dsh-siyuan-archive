@@ -43,6 +43,26 @@ DSH Web → 设置 → 左侧导航「思源归档」：
 4. **权限**：给目标笔记本勾选读/写（归档需「写」）；可展开文档对子路径收紧；未勾的默认全拒 → 保存。
 5. **工具开关**：默认开 `siyuan_archive`；删除类默认关。
 
+页脚会显示「宿主接口前缀」，即设置页调宿主接口用的基址。根目录部署显示「origin 根目录（自动）」。
+
+### 挂在路径前缀下（`https://example.com/dsh/`）
+
+设置页会自动定位前缀，正常情况无需任何配置。反代仍需满足两条，否则 DSH 自身（不只是本插件）会挂：
+
+```nginx
+location /dsh/ {
+    proxy_pass http://127.0.0.1:3080/;   # 尾斜杠 = 剥掉 /dsh 前缀
+    proxy_set_header Host $host;         # 必须保留 Host，否则宿主信任围栏返回 403
+    proxy_set_header X-Forwarded-Proto $scheme;
+}
+```
+
+若前缀实在自动定位不出来（页脚显示「origin 根目录」但接口报 403/404），在浏览器控制台指定一次即可：
+
+```js
+localStorage.setItem('dsh-siyuan-archive.apiBase', '/dsh')
+```
+
 ## 使用
 
 在对话里直接下指令，模型会自动调用工具：
@@ -72,7 +92,7 @@ DSH Web → 设置 → 左侧导航「思源归档」：
 ## 开发
 
 ```bash
-npm test              # harness（纯函数）+ tools-e2e（对 mock-siyuan 替身全链路）
+npm test              # harness（纯函数）+ client（部署前缀定位）+ tools-e2e（对 mock-siyuan 替身全链路）
 ```
 
 详见 [docs/DEV.md](docs/DEV.md)（联调步骤、思源 API 血泪坑、发布清单）。

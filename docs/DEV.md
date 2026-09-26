@@ -80,6 +80,33 @@ token 存宿主 `credentials` 服务，ref `SIYUAN_TOKEN`（与思源官方环�
 `SELECT box, hpath FROM blocks WHERE id = '...'`（`locateBlock`）定位。检索结果批量定位
 （`WHERE id IN (...)`）一次往返。定位不到按无权限过滤——不泄露无权限文档内容，只在提示里报条数。
 
+### 3.6 客户端 API 基址 = 部署前缀自动定位
+
+设置页所有读写走宿主 `/siyuan-archive/api/*`。**不能硬编码根绝对路径**：`/siyuan-archive/api/x`
+只在「DSH 挂在 origin 根目录」时成立。DSH 整条前端链路（`/api`、`/plugins`、`/plugins/events`、
+WS `remote.mux`）都是根绝对路径，所以反代必须做**前缀剥离**，浏览器侧实际该发的是
+`/dsh/siyuan-archive/api/*`。硬编码会让所有「反代 + 路径前缀」部署的设置页整页报「读取配置失败」。
+
+`client.js` 的做法（`ensureApiBase`，页内只探一次，结果缓存）：
+
+1. **候选顺序**：localStorage 人工覆盖 → `location.pathname` 推断 → origin 根目录（历史行为兜底）。
+2. **怎么推断**：`document.baseURI` 用不了——DSH 硬注入 `<base href="/">`（`dsh-host-frontend-static`），
+   相对 URL 和 baseURI 全被锚在根。但 DSH **没有前端路由**（全仓无 `pushState`），
+   `location.pathname` 就是外壳页面路径，也就是挂载前缀本身。
+3. **怎么确认猜对**：宿主路由的响应必是 `{ok: boolean, ...}` 信封。猜错时命中静态兜底，
+   拿到的是 404 空体或 `index.html`（JSON 解析失败 → `null`），据此换下一个候选。
+4. **必须分开「打到了路由」与「业务报错」**：`ok:false` 是业务错误，说明前缀已对，
+   原样上抛并把前缀缓存下来；只有非信封响应才算没打中，误差就是多一次失败请求。
+5. **全落空不写缓存**：下次调用重新探，顺带覆盖「宿主比页面起得晚」的启动竞态；
+   错误消息点名试过的前缀并给出 `localStorage.setItem('dsh-siyuan-archive.apiBase', '/前缀')`。
+
+**前缀存成无尾斜杠**（`''` 或 `/dsh`），才能与 `API_ROUTE` 直接相接。归一化必须折叠开头的
+重复斜杠：`//dsh` 在 fetch 里是**协议相对 URL**，会被解析成 `https://dsh/`，把请求打到外网去。
+
+设置页页脚常驻显示「宿主接口前缀：/dsh/（自动）」——这类 bug 用户第一眼要能看出是「自动」
+猜对了还是压根没猜对。回归测试在 `test/client.mjs`（53 条，离线，stub `window`/`location`/
+`localStorage`/`fetch`）。
+
 ## 4. 思源 API 血泪坑（抄结论即可）
 
 | 坑 | 解决 |
@@ -95,6 +122,8 @@ token 存宿主 `credentials` 服务，ref `SIYUAN_TOKEN`（与思源官方环�
 
 - 默认不联网、不读环境变量、不碰真实实例：`harness.mjs` 用假 ctx，`tools-e2e.mjs` 把
   `globalThis.fetch` 指向 `mock-siyuan.mjs`，`DSH_HOME` 指向 `mkdtempSync` 临时目录。
+- `client.mjs` 走浏览器那一侧：stub `window.__ModuleLoader__` 接住 factory，再 stub
+  `location` / `localStorage` / `fetch`，直接测前缀归一化、候选顺序、信封识别与端到端回落。
 - 替身刻意复刻真实行为（鉴权、`code` 信封、非幂等、异步落库）——**改测试时别把它们「修」掉**。
 - `tools-e2e.mjs` 通过 `internals.buildTools(ctx, signal => internals.createApi(ctx, signal))` 拿到
   工具定义并直接调 `execute`，`ctx` 里 `credentials.resolve` 返回测试 token。
@@ -112,3 +141,21 @@ token 存宿主 `credentials` 服务，ref `SIYUAN_TOKEN`（与思源官方环�
 思源内核常跑在容器里，读不到宿主机文件路径（所以不能走 MCP asset upload，只能直连 HTTP）。
 **先确认 dsh 跑在哪**：宿主机 vs 容器决定 `baseUrl` 是 `127.0.0.1:6806` 还是容器网络地址。
 客户端 `baseUrl` 的视角是「dsh 进程所在机器」。
+
+### 7.1 挂在路径前缀下（`https://example.com/dsh/`）
+
+DSH 官方只支持 origin 根部署（无 `basePath` 配置项、无 CLI 开关、宿主不剥前缀），但反代前缀
+部署很常见。本插件的设置页已能自动定位前缀（§3.6），但**反代本身仍有两个硬要求**，不满足时
+症状和原来的 bug 长得一样，别误判：
+
+| 要求 | 不满足的后果 |
+| --- | --- |
+| **反代必须剥前缀**（nginx `proxy_pass http://127.0.0.1:3080/;` 带尾斜杠，或 `rewrite`；caddy `handle_path`） | 浏览器发的 `/dsh/siyuan-archive/api/*` 原样送到宿主，`/api`、`/plugins` 全挂——不是本插件的问题 |
+| **反代必须保留 `Host`**（nginx `proxy_set_header Host $host;`） | 宿主信任围栏比 `URL(origin).host` 与 `Host` 头，不一致直接 403。围栏是 C10 加固，**不要为了绕过它去放宽** |
+
+前缀部署时首次打开页面会被 DSH 鉴权 303 到 `Location: /`（`dsh-client-connection` 把
+`url.pathname` 强制成 `/`），跳回 origin 根、丢掉前缀。让用户直接访问带前缀的地址即可
+（cookie 本身是 origin 级的，带 `Path=/`，前缀下照常生效）。
+
+**本插件不新增宿主路由**，因此改 `client.js` 不用重启宿主（§2 的生效方式表仍然成立），
+前缀探测也不依赖新加的接口方法——升级期新旧 `index.js` 混跑不会把设置页打挂。
