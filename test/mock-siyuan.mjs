@@ -10,6 +10,7 @@ export function createMockSiYuan(options = {}) {
   const notebooks = options.notebooks ?? [{ id: '20260923180727-bh43cx1', name: 'DSH', closed: false }]
   const blocks = new Map()
   const pendingDeletes = new Set()
+  const tableOwner = new Map()
   let seq = 0
   const nextId = () => `mock${Date.now()}${String(++seq).padStart(4, '0')}`
 
@@ -72,7 +73,40 @@ export function createMockSiYuan(options = {}) {
   function createDoc(payload) {
     const id = nextId()
     blocks.set(id, { id, box: payload.notebook, hpath: payload.path, type: 'd', markdown: payload.markdown ?? '' })
+    // 若正文含 Markdown 表格，登记一个 table 子块，供索引更新用。
+    const md = payload.markdown ?? ''
+    if (/^\|[\s:|-]+\|\s*$/m.test(md)) {
+      const tblId = id + '-tbl'
+      blocks.set(tblId, { id: tblId, box: payload.notebook, hpath: payload.path, type: 'table', markdown: md })
+      tableOwner.set(tblId, id)
+    }
     return id
+  }
+
+  function getChildBlocks(payload) {
+    const children = []
+    for (const [tblId, ownerId] of tableOwner) {
+      if (ownerId === payload.id) children.push({ id: tblId, type: 'table', subType: '' })
+    }
+    return children
+  }
+
+  function updateBlock(payload) {
+    const b = blocks.get(payload.id)
+    if (b === undefined) return []
+    if (b.type === 'table') {
+      const ownerId = tableOwner.get(payload.id)
+      const doc = blocks.get(ownerId)
+      if (doc !== undefined) {
+        const idx = doc.markdown.lastIndexOf('## 索引')
+        const head = idx >= 0 ? doc.markdown.slice(0, idx) : doc.markdown + '\n\n'
+        doc.markdown = head + '## 索引\n\n' + (payload.data ?? '')
+      }
+      b.markdown = payload.data ?? ''
+    } else {
+      b.markdown = payload.data ?? ''
+    }
+    return []
   }
 
   function search(payload) {
@@ -128,6 +162,12 @@ export function createMockSiYuan(options = {}) {
         break
       case '/api/block/appendBlock':
         data = []
+        break
+      case '/api/block/getChildBlocks':
+        data = getChildBlocks(payload)
+        break
+      case '/api/block/updateBlock':
+        data = updateBlock(payload)
         break
       case '/api/export/exportMdContent': {
         const b = blocks.get(payload.id)

@@ -68,6 +68,20 @@ ok(archiveResult.includes('已归档'), '归档成功返回')
 ok(archiveResult.includes(NB), '归档结果含笔记本 id')
 const createdHPath = [...mock.state.blocks.values()].find((b) => b.type === 'd' && b.hpath.includes('思源归档_管线使用说明'))
 ok(createdHPath !== undefined, '归档文档已按生成路径落库')
+ok(createdHPath !== undefined && String(createdHPath.markdown).includes('| 主题 |'), '归档正文含元数据表')
+
+// ── 索引与规范 ──────────────────────────────────────────────────────────────
+
+console.log('\n[索引与规范]')
+let indexDoc = [...mock.state.blocks.values()].find((b) => b.type === 'd' && b.hpath === '/索引与规范')
+ok(indexDoc !== undefined, '首次归档生成「索引与规范」文档')
+ok(indexDoc !== undefined && String(indexDoc.markdown).includes('思源归档_管线使用说明'), '索引表含归档标题')
+ok(indexDoc !== undefined && String(indexDoc.markdown).includes('## 规范'), '索引文档含「规范」章节')
+
+const archiveResult2 = await run('siyuan_archive', { markdown: '内容B', topic: '第二个主题', desc: '说明B', notebook: NB })
+ok(archiveResult2.includes('已归档'), '第二次归档成功')
+indexDoc = [...mock.state.blocks.values()].find((b) => b.type === 'd' && b.hpath === '/索引与规范')
+ok(indexDoc !== undefined && String(indexDoc.markdown).includes('第二个主题') && String(indexDoc.markdown).includes('思源归档'), '索引表更新后含两篇归档')
 
 // ── 归档：无写权限应拒绝 ────────────────────────────────────────────────────
 

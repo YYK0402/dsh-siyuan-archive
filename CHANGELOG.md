@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- 归档正文顶部自动附元数据表（主题 / 类型 / 归档时间）；首次归档创建笔记本根的
+  「索引与规范」文档，之后每次归档重建索引表（标题 / 类型 / 归档时间，标题列块引用可跳转），
+  仅更新表格块、保留「规范」部分的用户改动。
+- 权限卡递归树：逐层展开/折叠，子级开关显示继承到的有效权限、父级未授予时置灰禁用；
+  `resolvePermission` 改为累计收紧语义（与 UI 一致）。
 - 删除类工具 `siyuan_delete_block` / `siyuan_remove_doc`（danger 组默认关闭）：需 confirm=true +
   「删」权限；`waitUntilBlockGone` 指数退避复核异步落库（约 6 秒预算），文档块走 delete_block
   会被拦下指路 remove_doc。

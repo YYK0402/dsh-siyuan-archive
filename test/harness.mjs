@@ -112,6 +112,19 @@ eq(loc.box, 'nb-x', 'locateBlock 取 box')
 eq(loc.hpath, '/a/b', 'locateBlock 取 hpath')
 eq(await internals.locateBlock(async () => [], 'missing'), null, 'locateBlock 不存在返回 null')
 
+// ── 元数据表与索引 ──────────────────────────────────────────────────────────
+
+console.log('\n[元数据表与索引]')
+const mdTable = internals.buildMetadataTable('合同系统二期', '需求', new Date(2026, 8, 26, 18, 12, 0))
+ok(mdTable.includes('| 主题 | 合同系统二期 |'), '元数据表含主题')
+ok(mdTable.includes('2026-09-26 18:12'), '元数据表含归档时间')
+const entry = internals.parseArchiveEntry({ id: 'doc1', hpath: '/2026-09/需求/2026-09-26_1812_合同系统二期_需求说明' })
+eq(entry.title, '2026-09-26_1812_合同系统二期_需求说明', 'parseArchiveEntry 取标题')
+eq(entry.category, '需求', 'parseArchiveEntry 取类型')
+eq(entry.when, '2026-09-26 18:12', 'parseArchiveEntry 取归档时间')
+const indexTable = internals.buildIndexTable([entry])
+ok(indexTable.includes('((doc1 "2026-09-26_1812_合同系统二期_需求说明"))'), '索引表含块引用')
+
 // ── 汇总 ────────────────────────────────────────────────────────────────────
 
 console.log(`\n${passed} 通过 / ${failed} 失败`)
