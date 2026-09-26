@@ -8,7 +8,7 @@ DeepSeek Harness（DSH）插件：把 DSH 对话产出的内容**归档到思源
 
 - 一条命令归档：按「`<归档路径>/<年-月>/<类型>/<日期>_<时间>_<主题>_<内容>`」生成标题与路径写入思源。
 - 设置页五卡：连接（地址 + 测试连接）、API token（永不回显）、归档（目标笔记本 / 路径 / 类型 / 标题模板）、权限（笔记本级授予 + 文档级收紧）、工具开关。
-- 7 个工具：`siyuan_list_notebooks` / `siyuan_search` / `siyuan_read_doc` / `siyuan_archive` / `siyuan_delete_block` / `siyuan_remove_doc`。
+- 6 个工具：`siyuan_list_notebooks` / `siyuan_search` / `siyuan_read_doc` / `siyuan_archive` / `siyuan_delete_block` / `siyuan_remove_doc`。
 - 权限模型：未配置的笔记本默认全拒；笔记本级勾选自动继承到其全部子文档；文档级只能收紧、不能放松。
 
 ## 前置条件

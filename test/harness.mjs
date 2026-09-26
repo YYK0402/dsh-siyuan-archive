@@ -72,8 +72,8 @@ eq(internals.normalizeConfig({ archivePath: '/' }).archivePath, '', '根路径�
 console.log('\n[apply() 假 ctx 注册]')
 const registered = []
 const routes = []
-let effectDisposers = []
-const sub = {
+const effectDisposers = []
+const ctx = {
   tools: { register: (def) => { registered.push(def); return () => {} } },
   webServer: { register: (spec) => { routes.push(spec); return () => {} } },
   get: (name) => {
@@ -86,7 +86,6 @@ const sub = {
   effect: (fn, label) => { effectDisposers.push(label); const d = fn(); return () => {} },
   logger: { warn: () => {}, info: () => {} },
 }
-const ctx = { inject: (_deps, fn) => fn(sub) }
 apply(ctx)
 
 ok(registered.some((t) => t.name === 'siyuan_archive'), '归档工具默认注册')

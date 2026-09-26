@@ -66,8 +66,5 @@
     "registry": "https://registry.npmjs.org/",
     "access": "public"
   },
-  "devDependencies": {
-    "@deepseek-ai/dsh-tools": "^0.1.5-rc.1"
-  },
   "license": "MIT"
 }

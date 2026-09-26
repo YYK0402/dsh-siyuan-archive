@@ -10,7 +10,7 @@ A 路 bundle 包（npm 可发布），直连思源 HTTP API，**不套 MCP**。
 | --- | --- |
 | `package.json` | npm + dsh manifest（`dsh.bundle.patch` / `dsh.client.platform=web`） |
 | `cordis.patch.yml` | 发布用 patch 层，等价一行 `insert: id=siyuan-archive name=dsh-siyuan-archive` |
-| `lib/index.js` | Host 半场：配置 + 凭据 + 权限 + 路由 + 7 个工具 |
+| `lib/index.js` | Host 半场：配置 + 凭据 + 权限 + 路由 + 6 个工具 |
 | `lib/client.js` | Client 半场：设置页 5 卡（连接/token/归档/权限/工具开关） |
 | `test/` | `harness.mjs`（纯函数）、`mock-siyuan.mjs`（替身）、`tools-e2e.mjs`（全链路） |
 
