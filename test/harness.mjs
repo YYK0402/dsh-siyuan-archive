@@ -33,12 +33,13 @@ const perms = internals.normalizePermissions({
 })
 
 console.log('\n[权限解析]')
-eq(internals.resolvePermission(perms, 'nb-a', '/2026-09/方案/x', 'w'), true, '最长前缀节点可保留 w（显式 true 不放松也不收紧）')
-eq(internals.resolvePermission(perms, 'nb-a', '/2026-09/方案/x', 'r'), false, '最长前缀节点 r=false 收紧')
-eq(internals.resolvePermission(perms, 'nb-a', '/2026-09/纪要/x', 'w'), false, '次长前缀节点 w=false 收紧')
+eq(internals.resolvePermission(perms, 'nb-a', '/2026-09/方案/x', 'w'), false, '浅层 w=false 收紧对深层仍生效（深层 w=true 不能放松）')
+eq(internals.resolvePermission(perms, 'nb-a', '/2026-09/方案/x', 'r'), false, '深层节点 r=false 收紧')
+eq(internals.resolvePermission(perms, 'nb-a', '/2026-09/纪要/x', 'w'), false, '浅层前缀节点 w=false 收紧')
 eq(internals.resolvePermission(perms, 'nb-a', '/2026-09/纪要/x', 'r'), true, '继承笔记本级 r=true')
 eq(internals.resolvePermission(perms, 'nb-a', '/其它/x', 'w'), true, '无前缀命中 → 继承笔记本级')
 eq(internals.resolvePermission(perms, 'nb-a', '/其它/x', 'd'), false, '笔记本级 d=false 全拒')
+eq(internals.resolvePermission(perms, 'nb-a', '/x', 'r'), true, '根级前缀不命中，回落到笔记本')
 eq(internals.resolvePermission(perms, 'nb-missing', '/x', 'r'), false, '未配置笔记本默认全拒')
 eq(internals.resolvePermission(perms, 'nb-a', '/x', 'w'), true, '根级前缀不命中，回落到笔记本')
 
