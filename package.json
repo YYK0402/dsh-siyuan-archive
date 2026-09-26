@@ -1,0 +1,73 @@
+{
+  "name": "dsh-siyuan-archive",
+  "version": "0.0.1",
+  "description": "DeepSeek Harness 插件：把 DSH 对话产出归档到思源笔记，带连接/归档/权限设置页，token 存宿主凭据库，权限按笔记本→文档继承、默认全拒。",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./lib/client.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "cordis.patch.yml",
+    "CHANGELOG.md"
+  ],
+  "dsh": {
+    "engines": {
+      "dsh": ">=0.1.5-rc.1 || >=0.1.6-0 || >=0.1.7-0"
+    },
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web"
+    }
+  },
+  "dshhub": {
+    "schemaVersion": 1,
+    "displayName": "思源归档",
+    "summary": "把 DSH 对话产出归档到思源笔记：连接(baseUrl/token)、归档目标笔记本与路径、按笔记本/文档的读写删权限（顶级授予自动继承子级、默认全拒）。",
+    "categories": [
+      "知识库",
+      "Web UI"
+    ],
+    "surfaces": [
+      "host",
+      "web"
+    ],
+    "capabilities": {
+      "provides": [
+        "service:siyuan-archive"
+      ]
+    },
+    "compatibility": {
+      "dsh": ">=0.1.5-rc.1 || >=0.1.6-0 || >=0.1.7-0",
+      "node": ">=20"
+    }
+  },
+  "scripts": {
+    "test": "node test/harness.mjs && node test/tools-e2e.mjs"
+  },
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "siyuan",
+    "思源笔记",
+    "archive",
+    "knowledge-base"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
+  },
+  "devDependencies": {
+    "@deepseek-ai/dsh-tools": "^0.1.5-rc.1"
+  },
+  "license": "MIT"
+}
