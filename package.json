@@ -44,7 +44,7 @@
     },
     "compatibility": {
       "dsh": ">=0.1.5-rc.1 || >=0.1.6-0 || >=0.1.7-0",
-      "node": ">=20"
+      "node": ">=22"
     }
   },
   "scripts": {
@@ -60,11 +60,19 @@
     "knowledge-base"
   ],
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "publishConfig": {
     "registry": "https://registry.npmjs.org/",
     "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/YYK0402/dsh-siyuan-archive.git"
+  },
+  "homepage": "https://github.com/YYK0402/dsh-siyuan-archive#readme",
+  "bugs": {
+    "url": "https://github.com/YYK0402/dsh-siyuan-archive/issues"
   },
   "license": "MIT"
 }
