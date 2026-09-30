@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.1.1
+
+- **修复：归档后「索引与规范」索引表残留为空。** 思源 3.8.5 `createDocWithMd` 立刻返回 200，
+  但随后紧接的 SQL 在写后读窗口（约 2s）内查不到刚建的文档；`syncIndexDoc` 同步跟进调用 SQL，
+  旧实现只查一次就放弃，于是索引表永远只剩表头分隔符。改为：archive 把新建文档 id 透传给
+  `syncIndexDoc`，SQL 重试到该 id 可见为止（预算 10×300ms = 3s）。同时过滤掉 `parseArchiveEntry`
+  后 `when === ''` 的目录文档（典型是 `/2026-09` `/2026-09/杂项` 这种手动建的容器），它们曾经
+  以空 category/when 形式污染索引表。
+- **修复：第二次起归档索引表被复制堆叠。** `lib/index.js` 旧代码按 `type === 'table'` 找表格块，
+  但思源 SQL schema 里表格块的 type 是 `'t'`（DOM 上是 `NodeTable`），`'table'` 在思源里根本不存在
+  —— 每次同步都走 `appendBlock` 分支，旧表留底、新表追加，多归档几次后变成一堆空表叠加。改为
+  `'t'`，命中现有表格 `updateBlock`，命中失败才 append。
+- 测试替身 `test/mock-siyuan.mjs` 同步按真实思源修正：表格块 `type: 't'`（替身原来按错误的
+  `'table'` 模拟，导致原 e2e 测不出这个 BUG），新增 `createAfterCreateMs` 选项模拟写后读窗口
+  默认 0 不破现有用例，回归用例显式设为 600ms 触发 syncIndexDoc 的重试逻辑。
+- e2e 新增 `[索引延迟一致与 type 修正]` 章节 6 个断言：延迟 mock 下归档成功、索引与规范文档生成、
+  重试兜住后索引表含归档标题、第二次归档后表格不被 append 重复、两次归档标题都在、非归档命名的
+  目录文档被剔除。
+
 ## 0.1.0
 
 - **修复：设置页在「反代 + 路径前缀」部署下整页报「读取配置失败」。** `lib/client.js` 原先硬编码

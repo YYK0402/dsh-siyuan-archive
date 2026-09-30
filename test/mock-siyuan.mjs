@@ -7,6 +7,9 @@
 export function createMockSiYuan(options = {}) {
   const token = options.token ?? 'test-token'
   const deleteDelayMs = options.deleteDelayMs ?? 80
+  // createDocWithMd 立刻返回，但 SQL 查不到刚建的文档，N 毫秒后才可见——复刻思源 3.8.5 的写后读一致性窗口。
+  // 默认 0（生产 mock 同步可见，不破现有用例）；回归用例显式设一个数触发 syncIndexDoc 的重试逻辑。
+  const createAfterCreateMs = options.createAfterCreateMs ?? 0
   const notebooks = options.notebooks ?? [{ id: '20260923180727-bh43cx1', name: 'DSH', closed: false }]
   const blocks = new Map()
   const pendingDeletes = new Set()
@@ -16,7 +19,7 @@ export function createMockSiYuan(options = {}) {
 
   function seedDoc(notebookId, hpath, markdown = '') {
     const id = nextId()
-    blocks.set(id, { id, box: notebookId, hpath, type: 'd', markdown })
+    blocks.set(id, { id, box: notebookId, hpath, type: 'd', markdown, _visibleAt: 0 })
     return id
   }
 
@@ -50,11 +53,13 @@ export function createMockSiYuan(options = {}) {
     const boxEq = /WHERE\s+box\s*=\s*'([^']*)'/.exec(stmt)
     if (boxEq) {
       const box = boxEq[1]
+      const now = Date.now()
       const rows = []
       for (const b of blocks.values()) {
         if (b.box !== box) continue
         if (/type\s*=\s*'d'/.test(stmt) && b.type !== 'd') continue
         if (/hpath\s*!=\s*'\/'/.test(stmt) && b.hpath === '/') continue
+        if ((b._visibleAt ?? 0) > now) continue
         rows.push({ id: b.id, hpath: b.hpath })
       }
       return rows
@@ -72,12 +77,12 @@ export function createMockSiYuan(options = {}) {
 
   function createDoc(payload) {
     const id = nextId()
-    blocks.set(id, { id, box: payload.notebook, hpath: payload.path, type: 'd', markdown: payload.markdown ?? '' })
+    blocks.set(id, { id, box: payload.notebook, hpath: payload.path, type: 'd', markdown: payload.markdown ?? '', _visibleAt: createAfterCreateMs > 0 ? Date.now() + createAfterCreateMs : 0 })
     // 若正文含 Markdown 表格，登记一个 table 子块，供索引更新用。
     const md = payload.markdown ?? ''
     if (/^\|[\s:|-]+\|\s*$/m.test(md)) {
       const tblId = id + '-tbl'
-      blocks.set(tblId, { id: tblId, box: payload.notebook, hpath: payload.path, type: 'table', markdown: md })
+      blocks.set(tblId, { id: tblId, box: payload.notebook, hpath: payload.path, type: 't', markdown: md, _visibleAt: createAfterCreateMs > 0 ? Date.now() + createAfterCreateMs : 0 })
       tableOwner.set(tblId, id)
     }
     return id
@@ -86,7 +91,7 @@ export function createMockSiYuan(options = {}) {
   function getChildBlocks(payload) {
     const children = []
     for (const [tblId, ownerId] of tableOwner) {
-      if (ownerId === payload.id) children.push({ id: tblId, type: 'table', subType: '' })
+      if (ownerId === payload.id) children.push({ id: tblId, type: 't', subType: '' })
     }
     return children
   }
@@ -94,7 +99,7 @@ export function createMockSiYuan(options = {}) {
   function updateBlock(payload) {
     const b = blocks.get(payload.id)
     if (b === undefined) return []
-    if (b.type === 'table') {
+    if (b.type === 't') {
       const ownerId = tableOwner.get(payload.id)
       const doc = blocks.get(ownerId)
       if (doc !== undefined) {
